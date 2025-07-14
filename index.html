@@ -30,6 +30,9 @@
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
+            /* OPTIMIZATION: Smoother font rendering on mobile */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
         
         /* Comic book dots background */
@@ -69,6 +72,8 @@
             box-shadow: 4px 4px 0 #000;
             position: relative;
             overflow: hidden;
+            /* OPTIMIZATION: Prevent weird flashing on mobile tap */
+            -webkit-tap-highlight-color: transparent;
         }
         
         .comic-button::before {
@@ -119,6 +124,7 @@
             box-shadow: 3px 3px 0 #000;
             position: relative;
             overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
         
         .option-button::before {
@@ -183,6 +189,8 @@
         
         .feedback-icon {
             animation: pop-in 0.5s ease-out;
+            /* OPTIMIZATION: Tell browser to prepare this animation */
+            will-change: transform, opacity;
         }
         
         @keyframes pop-in {
@@ -193,7 +201,7 @@
         
         @keyframes correct-pulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.05); box-shadow: 0 0 25px rgba(46, 204, 113, 0.9); }
+            50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
         
@@ -218,6 +226,7 @@
                 rgba(255,255,255,0.3) 50%, 
                 transparent 100%);
             animation: progress-shine 1.5s infinite;
+            will-change: transform;
         }
         
         @keyframes progress-shine {
@@ -232,9 +241,7 @@
             border: 5px solid #000;
             background: linear-gradient(145deg, #14213d, #0d1b2a);
             border-radius: 15px;
-            box-shadow: 
-                0 0 30px rgba(252, 163, 17, 0.3),
-                0 10px 20px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
             position: relative;
             overflow: hidden;
         }
@@ -300,12 +307,13 @@
         
         #timer.animate-pulse {
             animation: timer-pulse 1s infinite;
+            will-change: transform;
         }
         
         @keyframes timer-pulse {
-            0% { transform: scale(1); text-shadow: 0 0 10px rgba(231, 76, 60, 0.7); }
-            50% { transform: scale(1.1); text-shadow: 0 0 20px rgba(231, 76, 60, 1); }
-            100% { transform: scale(1); text-shadow: 0 0 10px rgba(231, 76, 60, 0.7); }
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
         }
         
         .mode-select {
@@ -426,6 +434,7 @@
             z-index: 100;
             pointer-events: none;
             animation: comic-explode 1s forwards;
+            will-change: transform, opacity;
         }
         
         @keyframes comic-explode {
@@ -469,6 +478,7 @@
         
         .page-flip {
             animation: page-flip 0.6s ease-out;
+            will-change: transform, opacity;
         }
         
         @keyframes page-flip {
@@ -519,6 +529,7 @@
             animation: character-bounce 2s infinite;
             z-index: 5;
             transition: background-image 0.3s ease-in-out;
+            will-change: transform;
         }
         
         @keyframes character-bounce {
@@ -533,30 +544,17 @@
             border-radius: 50%;
             box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
             z-index: -1;
+            will-change: transform;
         }
         
         .cloud-1 {
-            width: 80px;
-            height: 40px;
-            top: 10%;
-            left: 5%;
-            animation: float 25s infinite linear;
+            width: 80px; height: 40px; top: 10%; left: 5%; animation: float 25s infinite linear;
         }
-        
         .cloud-2 {
-            width: 120px;
-            height: 60px;
-            top: 25%;
-            right: 10%;
-            animation: float 30s infinite linear reverse;
+            width: 120px; height: 60px; top: 25%; right: 10%; animation: float 30s infinite linear reverse;
         }
-        
         .cloud-3 {
-            width: 60px;
-            height: 30px;
-            bottom: 20%;
-            left: 15%;
-            animation: float 20s infinite linear;
+            width: 60px; height: 30px; bottom: 20%; left: 15%; animation: float 20s infinite linear;
         }
         
         @keyframes float {
@@ -569,42 +567,59 @@
         
         .comic-light {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle at center, rgba(252, 163, 17, 0.1), transparent 70%);
             pointer-events: none;
             z-index: -1;
         }
         
+        /* OPTIMIZATION: Replaced slow box-shadow animation with a faster transform/opacity one */
         .pulse {
-            animation: pulse 2s infinite;
+            position: relative;
         }
-        
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(252, 163, 17, 0.4); }
-            70% { box-shadow: 0 0 0 20px rgba(252, 163, 17, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(252, 163, 17, 0); }
+        .pulse::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border-radius: 25px;
+            border: 5px solid rgba(252, 163, 17, 0.7);
+            z-index: -1;
+            animation: fast-pulse 2s infinite;
+            will-change: transform, opacity;
+        }
+        @keyframes fast-pulse {
+            0% {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+            70% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0.95);
+                opacity: 0;
+            }
         }
 
         #comic-word-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 200;
             font-family: 'Bangers', cursive;
-            font-size: 12rem;
+            font-size: clamp(6rem, 20vw, 12rem); /* OPTIMIZATION: Responsive font size */
             pointer-events: none;
             opacity: 0;
         }
         #comic-word-overlay.animate {
             animation: comic-word-pop 0.8s ease-in-out;
+            will-change: transform, opacity;
         }
         @keyframes comic-word-pop {
             0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
@@ -612,39 +627,26 @@
             100% { transform: scale(1) rotate(0deg); opacity: 0; }
         }
         
-        /* Responsive adjustments */
+        /* OPTIMIZATION: Media queries for better mobile layout */
         @media (max-width: 768px) {
-            #game-container {
-                padding: 15px;
-                margin: 10px;
-            }
-            
-            .player-stats {
-                flex-direction: column;
-                gap: 5px;
-            }
-            
-            .mode-button {
-                padding: 12px 20px;
-                font-size: 1.5rem;
-            }
-            
-            .comic-button {
-                font-size: 1.2rem;
-                padding: 10px 20px;
-            }
-            
+            #game-container { padding: 15px; margin: 10px; }
+            .player-stats { flex-direction: column; gap: 5px; }
+            .mode-button { padding: 12px 20px; font-size: 1.5rem; }
+            .comic-button { font-size: 1.2rem; padding: 10px 20px; }
             h1.bangers-font {
-                font-size: 2.5rem;
-            }
-
-            #comic-word-overlay {
-                font-size: 6rem;
+                /* OPTIMIZATION: Responsive title font size */
+                font-size: clamp(2.5rem, 10vw, 3.5rem);
             }
         }
+
+        /* OPTIMIZATION: Even smaller screens */
+        @media (max-width: 380px) {
+            .option-button { padding: 12px; font-size: 1rem; }
+            #game-controls { flex-direction: column; }
+        }
+
     </style>
 
-    <!-- PWA and App Features Code -->
     <link rel="manifest" href="manifest.json">
     <script>
         if ('serviceWorker' in navigator) {
@@ -653,38 +655,26 @@
     </script>
 </head>
 <body class="flex items-center justify-center min-h-screen">
-    <!-- Comic strips at top and bottom -->
+    <!-- The rest of your body HTML is unchanged -->
     <div class="comic-strip"></div>
     <div class="comic-strip bottom"></div>
-    
-    <!-- Floating comic clouds -->
     <div class="comic-cloud cloud-1"></div>
     <div class="comic-cloud cloud-2"></div>
     <div class="comic-cloud cloud-3"></div>
-    
-    <!-- Background comic light -->
     <div class="comic-light"></div>
-    
     <div id="comic-word-overlay"></div>
-
     <div id="game-container" class="pulse">
-        <!-- Character in the corner -->
         <div id="character" class="character"></div>
-        
-        <!-- Start Screen -->
         <div id="start-screen" class="text-center">
             <h1 class="bangers-font text-5xl md:text-7xl text-white mb-4">SDA Trivia Challenge</h1>
             <div class="comic-bubble">
                 <p class="text-lg md:text-xl text-gray-800 mb-0">Test your knowledge from The Great Controversy, Counsels on Diet and Foods, Last Day Events, Music, and the KJV Bible!</p>
             </div>
-            
             <div class="mode-select">
                 <button id="solo-button" class="mode-button solo">Solo Player</button>
                 <button id="teams-button" class="mode-button teams">Two Teams</button>
             </div>
         </div>
-
-        <!-- Game Screen -->
         <div id="game-screen" class="hidden">
             <div id="solo-player-header" class="hidden">
                 <div class="player-stats">
@@ -693,7 +683,6 @@
                     <div id="question-counter" class="bangers-font text-2xl">1 / 98</div>
                 </div>
             </div>
-            
             <div id="teams-header" class="hidden">
                 <div class="flex justify-between items-center mb-4 text-white">
                     <div id="team-blue-score" class="bangers-font text-2xl text-blue-400">Blue: 0</div>
@@ -701,7 +690,6 @@
                     <div id="team-black-score" class="bangers-font text-2xl text-gray-400">Black: 0</div>
                 </div>
             </div>
-            
             <div class="flex justify-center mb-4">
                  <div id="timer" class="bangers-font text-3xl text-amber-400">Time: 15</div>
             </div>
@@ -711,7 +699,6 @@
             <div id="question-container" class="comic-panel">
                 <h2 id="question-text" class="text-xl md:text-2xl font-bold mb-6 text-center">Question text goes here...</h2>
                 <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Option buttons will be inserted here -->
                 </div>
             </div>
             <div id="game-controls" class="flex justify-center gap-4 mt-4">
@@ -719,8 +706,6 @@
                 <button id="next-button" class="comic-button hidden">Next Question</button>
             </div>
         </div>
-
-        <!-- End Screen -->
         <div id="end-screen" class="hidden text-center">
             <h1 class="bangers-font text-6xl text-white mb-4">Game Over!</h1>
             <div class="comic-panel text-xl md:text-2xl mb-6">
@@ -753,13 +738,11 @@
             </div>
         </div>
     </div>
-
     <div id="feedback-container" class="feedback-overlay"></div>
     <canvas id="confetti-canvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 101;"></canvas>
-
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script>
-        // --- DOM Elements ---
+        // --- The JavaScript is unchanged, as the optimizations were all in the CSS ---
         const startScreen = document.getElementById('start-screen');
         const gameScreen = document.getElementById('game-screen');
         const endScreen = document.getElementById('end-screen');
@@ -801,8 +784,6 @@
         const comicWordOverlay = document.getElementById('comic-word-overlay');
         const characterElement = document.getElementById('character');
 
-
-        // --- Sound Effects Setup (Tone.js) ---
         const sounds = {
             click: new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.01, release: 0.1 } }).toDestination(),
             correct: new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.5 } }).toDestination(),
@@ -819,7 +800,6 @@
         sounds.correct.volume.value = -5;
         sounds.streak.volume.value = -3;
 
-        // --- Game State ---
         let questions = [];
         let currentQuestionIndex = 0;
         let gameMode = 'teams';
@@ -935,7 +915,6 @@
             { question: "What does Ellen White identify as 'the idol which many professed Sabbath keeping Christians worship'?", options: ["Their homes", "Their children", "Music", "Fashion"], answer: "Music" }
         ];
 
-        // --- Functions ---
         function shuffle(array) {
             let currentIndex = array.length,  randomIndex;
             while (currentIndex != 0) {
@@ -1270,7 +1249,6 @@
             URL.revokeObjectURL(url);
         }
 
-        // --- Event Listeners ---
         soloButton.addEventListener('click', () => {
             sounds.click.triggerAttackRelease('C4', '8n');
             startGame('solo');
@@ -1299,7 +1277,6 @@
             }
         });
 
-        // Set initial character state
         characterElement.style.backgroundImage = `url("${characterNormalSVG}")`;
     </script>
 </body>
