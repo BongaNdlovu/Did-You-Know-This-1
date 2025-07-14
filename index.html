@@ -97,7 +97,6 @@
             box-shadow: none;
         }
         
-        /* NEW: Exit button style */
         .comic-button.exit {
             background-color: var(--comic-red);
             color: white;
@@ -644,6 +643,14 @@
             }
         }
     </style>
+
+    <!-- PWA and App Features Code -->
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
 </head>
 <body class="flex items-center justify-center min-h-screen">
     <!-- Comic strips at top and bottom -->
@@ -707,7 +714,6 @@
                     <!-- Option buttons will be inserted here -->
                 </div>
             </div>
-            <!-- NEW: Game controls wrapper -->
             <div id="game-controls" class="flex justify-center gap-4 mt-4">
                 <button id="exit-button" class="comic-button exit">Exit Game</button>
                 <button id="next-button" class="comic-button hidden">Next Question</button>
@@ -765,7 +771,7 @@
         const questionCounterElement = document.getElementById('question-counter');
         const questionCounterTeamsElement = document.getElementById('question-counter-teams');
         const nextButton = document.getElementById('next-button');
-        const exitButton = document.getElementById('exit-button'); // NEW
+        const exitButton = document.getElementById('exit-button');
         const progressBar = document.getElementById('progress-bar');
         const timerElement = document.getElementById('timer');
         const teamsHeader = document.getElementById('teams-header');
@@ -837,9 +843,7 @@
         const characterSadSVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><circle cx="50" cy="40" r="30" fill="%23e74c3c"/><rect x="30" y="70" width="40" height="80" fill="%23e74c3c"/><circle cx="35" cy="40" r="4" fill="white"/><circle cx="65" cy="40" r="4" fill="white"/><path d="M40 60 Q50 50, 60 60" stroke="white" stroke-width="3" fill="none"/></svg>`;
         const characterNervousSVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><circle cx="50" cy="40" r="30" fill="%233a86ff"/><rect x="30" y="70" width="40" height="80" fill="%233a86ff"/><circle cx="35" cy="35" r="5" fill="white"/><circle cx="65" cy="35" r="5" fill="white"/><path d="M40 55 Q50 65, 60 55" stroke="white" stroke-width="3" fill="none"/><path d="M75 30 Q 80 20, 85 30 T 75 30" fill="%233498db"/></svg>`;
 
-        // --- Question Data (Full list) ---
         const gameQuestions = [
-            // Easy Questions (15 total)
             { question: "According to 'Counsels on Diet and Foods', what was man's original diet in Eden?", options: ["Fruits, grains, nuts, and vegetables", "Fish and bread", "Meat and dairy", "Honey and locusts"], answer: "Fruits, grains, nuts, and vegetables" },
             { question: "In 'The Great Controversy', what event marked the beginning of the 1260 years of papal supremacy?", options: ["The fall of Rome", "The Edict of Milan", "The decree of Emperor Justinian in A.D. 538", "The Council of Nicaea"], answer: "The decree of Emperor Justinian in A.D. 538" },
             { question: "From 'Last Day Events', what is the 'mark of the beast'?", options: ["A computer chip", "A secret society symbol", "Sunday observance enforced by law", "A tattoo on the hand"], answer: "Sunday observance enforced by law" },
@@ -855,8 +859,6 @@
             { question: "According to 'Music: Its Role, Qualities, and Influence', what is one of the most effective means of impressing spiritual truth upon the heart?", options: ["Listening to sermons", "Song", "Studying history", "Debating theology"], answer: "Song" },
             { question: "What should accompany singing in our services whenever possible, according to 'Music: Its Role, Qualities, and Influence'?", options: ["Dramatic readings", "Congregational responses", "Instrumental music", "Periods of silence"], answer: "Instrumental music" },
             { question: "In the KJV Bible, which disciple denied Jesus three times?", options: ["Judas", "John", "Peter", "Thomas"], answer: "Peter" },
-            
-            // Difficult Questions (83 total)
             { question: "In 'Counsels on Diet and Foods', what specific combination of common foods is mentioned as being 'liable to cause fermentation in the stomach'?", options: ["Bread and water", "Fruit and vegetables", "Milk and sugar", "Nuts and grains"], answer: "Milk and sugar" },
             { question: "According to 'The Great Controversy', the doctrine of the world's conversion and a spiritual reign of Christ was not held by the apostolic church but became generally accepted around what century?", options: ["10th century", "14th century", "16th century", "18th century"], answer: "18th century" },
             { question: "In 'Last Day Events', what specific reason is given for why God's people should move out of the cities, related to a future economic crisis?", options: ["High cost of living", "The problem of buying and selling", "Lack of jobs", "Overcrowding"], answer: "The problem of buying and selling" },
@@ -1069,13 +1071,12 @@
 
         function resetTimer() {
             clearInterval(timer);
-            // FIX: Remove pulse animation when timer resets
             timerElement.classList.remove('animate-pulse');
             timerElement.style.color = '#fca311';
         }
 
         function handleTimeUp() {
-            resetTimer(); // Use resetTimer to stop pulse
+            resetTimer(); 
             sounds.incorrect.triggerAttackRelease('G2', '0.5');
             showFeedback(false);
             showComicWord(false);
@@ -1240,7 +1241,6 @@
             }
         }
 
-        // NEW: Function to exit the game
         function exitGame() {
             sounds.click.triggerAttackRelease('C4', '8n');
             clearInterval(timer);
@@ -1287,7 +1287,7 @@
             startGame(gameMode);
         });
         downloadAnswersButton.addEventListener('click', downloadAnswers);
-        exitButton.addEventListener('click', exitGame); // NEW
+        exitButton.addEventListener('click', exitGame);
 
         nextButton.addEventListener('click', () => {
             sounds.next.triggerAttackRelease("8n");

@@ -1,0 +1,16 @@
+{
+  "name": "SDA Trivia Challenge",
+  "short_name": "SDA Trivia",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#16213e",
+  "theme_color": "#16213e",
+  "description": "A comic book style trivia game.",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
