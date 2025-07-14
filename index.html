@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDA Comic Book Trivia Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Sound Effect Library: Tone.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        :root {
+            --comic-red: #e63946;
+            --comic-blue: #3a86ff;
+            --comic-yellow: #ffbe0b;
+            --comic-purple: #8338ec;
+            --comic-green: #2a9d8f;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            overflow: hidden;
+            touch-action: manipulation;
+            min-height: 100vh;
+            position: relative;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        /* Comic book dots background */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 10px 10px, rgba(252, 163, 17, 0.15) 1px, transparent 2px),
+                radial-gradient(circle at 30px 30px, rgba(252, 163, 17, 0.15) 1px, transparent 2px);
+            background-size: 40px 40px;
+            opacity: 0.5;
+            z-index: -1;
+        }
+        
+        .bangers-font {
+            font-family: 'Bangers', cursive;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .comic-button {
+            font-family: 'Bangers', cursive;
+            letter-spacing: 1px;
+            background-color: #fca311;
+            color: #14213d;
+            border: 3px solid #000;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 4px 4px 0 #000;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .comic-button::before {
+            content: "";
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: linear-gradient(45deg, 
+                rgba(255,255,255,0.2) 0%, 
+                rgba(255,255,255,0) 50%, 
+                rgba(255,255,255,0.2) 100%);
+            transform: rotate(15deg);
+            z-index: 0;
+        }
+        
+        .comic-button:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 #000;
+            background-color: #ffb703;
+        }
+        
+        .comic-button:active {
+            transform: translate(4px, 4px);
+            box-shadow: none;
+        }
+        
+        /* NEW: Exit button style */
+        .comic-button.exit {
+            background-color: var(--comic-red);
+            color: white;
+        }
+        .comic-button.exit:hover {
+            background-color: #c0392b;
+        }
+
+        .option-button {
+            background-color: #e5e5e5;
+            color: #14213d;
+            border: 3px solid #000;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: left;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 3px 3px 0 #000;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .option-button::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, 
+                rgba(255,255,255,0.3) 0%, 
+                rgba(255,255,255,0) 50%, 
+                rgba(255,255,255,0.3) 100%);
+            z-index: 0;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .option-button:hover {
+            background-color: #fca311;
+            transform: translate(1px, 1px);
+            box-shadow: 2px 2px 0 #000;
+        }
+        
+        .option-button:hover::before {
+            transform: translateX(100%);
+        }
+        
+        .option-button.correct {
+            background-color: #2ecc71;
+            color: white;
+            border-color: #27ae60;
+            animation: correct-pulse 0.5s;
+            box-shadow: 0 0 15px rgba(46, 204, 113, 0.7);
+        }
+        
+        .option-button.incorrect {
+            background-color: #e74c3c;
+            color: white;
+            border-color: #c0392b;
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
+        }
+        
+        .option-button.disabled {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        .feedback-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10rem;
+            z-index: 100;
+            pointer-events: none;
+        }
+        
+        .feedback-icon {
+            animation: pop-in 0.5s ease-out;
+        }
+        
+        @keyframes pop-in {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.5); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes correct-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); box-shadow: 0 0 25px rgba(46, 204, 113, 0.9); }
+            100% { transform: scale(1); }
+        }
+        
+        .progress-bar-inner {
+            height: 100%;
+            background: linear-gradient(90deg, #fca311, #facc15);
+            border-radius: 8px;
+            transition: width 0.5s ease-in-out;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-bar-inner::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255,255,255,0.3) 50%, 
+                transparent 100%);
+            animation: progress-shine 1.5s infinite;
+        }
+        
+        @keyframes progress-shine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        #game-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 5px solid #000;
+            background: linear-gradient(145deg, #14213d, #0d1b2a);
+            border-radius: 15px;
+            box-shadow: 
+                0 0 30px rgba(252, 163, 17, 0.3),
+                0 10px 20px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #game-container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(135deg, transparent 0%, rgba(252, 163, 17, 0.05) 50%, transparent 100%),
+                radial-gradient(circle at top left, rgba(252, 163, 17, 0.1), transparent 30%),
+                radial-gradient(circle at bottom right, rgba(252, 163, 17, 0.1), transparent 30%);
+            z-index: -1;
+        }
+        
+        .comic-panel {
+            background-color: #fff;
+            border: 4px solid #000;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: #000;
+            transition: border-color 0.5s ease, transform 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .comic-panel::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(135deg, transparent 0%, rgba(0,0,0,0.03) 50%, transparent 100%);
+            pointer-events: none;
+        }
+        
+        .comic-panel.blue-turn { 
+            border-color: #3b82f6;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        .comic-panel.black-turn { 
+            border-color: #1f2937;
+            box-shadow: 0 0 20px rgba(31, 41, 55, 0.4);
+        }
+        
+        .comic-panel.solo-turn { 
+            border-color: #fca311;
+            box-shadow: 0 0 20px rgba(252, 163, 17, 0.4);
+        }
+        
+        #timer {
+            transition: transform 0.2s ease, color 0.3s ease;
+            font-size: 2.2rem;
+        }
+        
+        #timer.animate-pulse {
+            animation: timer-pulse 1s infinite;
+        }
+        
+        @keyframes timer-pulse {
+            0% { transform: scale(1); text-shadow: 0 0 10px rgba(231, 76, 60, 0.7); }
+            50% { transform: scale(1.1); text-shadow: 0 0 20px rgba(231, 76, 60, 1); }
+            100% { transform: scale(1); text-shadow: 0 0 10px rgba(231, 76, 60, 0.7); }
+        }
+        
+        .mode-select {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .mode-button {
+            font-family: 'Bangers', cursive;
+            letter-spacing: 1px;
+            background-color: #4a5568;
+            color: white;
+            border: 3px solid #000;
+            border-radius: 12px;
+            padding: 15px 30px;
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 4px 4px 0 #000;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .mode-button::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, 
+                rgba(255,255,255,0.2) 0%, 
+                rgba(255,255,255,0) 50%, 
+                rgba(255,255,255,0.2) 100%);
+            transform: rotate(15deg);
+            z-index: 0;
+        }
+        
+        .mode-button:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 #000;
+        }
+        
+        .mode-button.solo {
+            background-color: #fca311;
+            color: #14213d;
+        }
+        
+        .mode-button.solo:hover {
+            background-color: #ffb703;
+        }
+        
+        .mode-button.teams {
+            background-color: #3b82f6;
+            color: white;
+        }
+        
+        .mode-button.teams:hover {
+            background-color: #2563eb;
+        }
+        
+        .player-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 2px solid #fca311;
+            box-shadow: 0 0 10px rgba(252, 163, 17, 0.3);
+        }
+        
+        .player-score {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #fca311;
+            text-shadow: 0 0 5px rgba(252, 163, 17, 0.7);
+        }
+        
+        .streak-counter {
+            font-size: 1.5rem;
+            color: #2ecc71;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(46, 204, 113, 0.7);
+        }
+        
+        .star-rating {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+            justify-content: center;
+        }
+        
+        .star {
+            color: #ccc;
+            font-size: 1.5rem;
+            text-shadow: 0 0 3px rgba(0,0,0,0.5);
+        }
+        
+        .star.filled {
+            color: #facc15;
+            text-shadow: 0 0 8px rgba(250, 204, 21, 0.8);
+            animation: star-pulse 1s infinite alternate;
+        }
+        
+        @keyframes star-pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.2); }
+        }
+        
+        .comic-explosion {
+            position: absolute;
+            font-size: 3rem;
+            z-index: 100;
+            pointer-events: none;
+            animation: comic-explode 1s forwards;
+        }
+        
+        @keyframes comic-explode {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.5); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+        
+        .comic-strip {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            background: repeating-linear-gradient(
+                45deg,
+                var(--comic-red),
+                var(--comic-red) 10px,
+                var(--comic-blue) 10px,
+                var(--comic-blue) 20px,
+                var(--comic-yellow) 20px,
+                var(--comic-yellow) 30px,
+                var(--comic-purple) 30px,
+                var(--comic-purple) 40px,
+                var(--comic-green) 40px,
+                var(--comic-green) 50px
+            );
+            animation: strip-move 20s linear infinite;
+            z-index: 10;
+        }
+        
+        @keyframes strip-move {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .comic-strip.bottom {
+            top: auto;
+            bottom: 0;
+        }
+        
+        .page-flip {
+            animation: page-flip 0.6s ease-out;
+        }
+        
+        @keyframes page-flip {
+            0% { 
+                transform: perspective(1000px) rotateY(0deg);
+                opacity: 1;
+            }
+            50% { 
+                transform: perspective(1000px) rotateY(90deg);
+                opacity: 0.5;
+            }
+            100% { 
+                transform: perspective(1000px) rotateY(0deg);
+                opacity: 1;
+            }
+        }
+        
+        .comic-bubble {
+            position: relative;
+            background-color: #fff;
+            border: 3px solid #000;
+            border-radius: 20px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.2);
+        }
+        
+        .comic-bubble::after {
+            content: "";
+            position: absolute;
+            bottom: -15px;
+            left: 50px;
+            border: 15px solid transparent;
+            border-top-color: #fff;
+            border-right-color: #fff;
+            filter: drop-shadow(5px 5px 0 rgba(0,0,0,0.2));
+        }
+        
+        .character {
+            position: absolute;
+            bottom: 0;
+            right: 20px;
+            width: 100px;
+            height: 150px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            transform-origin: bottom;
+            animation: character-bounce 2s infinite;
+            z-index: 5;
+            transition: background-image 0.3s ease-in-out;
+        }
+        
+        @keyframes character-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .comic-cloud {
+            position: absolute;
+            background: white;
+            border: 3px solid black;
+            border-radius: 50%;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+            z-index: -1;
+        }
+        
+        .cloud-1 {
+            width: 80px;
+            height: 40px;
+            top: 10%;
+            left: 5%;
+            animation: float 25s infinite linear;
+        }
+        
+        .cloud-2 {
+            width: 120px;
+            height: 60px;
+            top: 25%;
+            right: 10%;
+            animation: float 30s infinite linear reverse;
+        }
+        
+        .cloud-3 {
+            width: 60px;
+            height: 30px;
+            bottom: 20%;
+            left: 15%;
+            animation: float 20s infinite linear;
+        }
+        
+        @keyframes float {
+            0% { transform: translateX(0) translateY(0); }
+            25% { transform: translateX(20px) translateY(-10px); }
+            50% { transform: translateX(0) translateY(0); }
+            75% { transform: translateX(-20px) translateY(10px); }
+            100% { transform: translateX(0) translateY(0); }
+        }
+        
+        .comic-light {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(252, 163, 17, 0.1), transparent 70%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(252, 163, 17, 0.4); }
+            70% { box-shadow: 0 0 0 20px rgba(252, 163, 17, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(252, 163, 17, 0); }
+        }
+
+        #comic-word-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            font-family: 'Bangers', cursive;
+            font-size: 12rem;
+            pointer-events: none;
+            opacity: 0;
+        }
+        #comic-word-overlay.animate {
+            animation: comic-word-pop 0.8s ease-in-out;
+        }
+        @keyframes comic-word-pop {
+            0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+            50% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 0; }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            #game-container {
+                padding: 15px;
+                margin: 10px;
+            }
+            
+            .player-stats {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .mode-button {
+                padding: 12px 20px;
+                font-size: 1.5rem;
+            }
+            
+            .comic-button {
+                font-size: 1.2rem;
+                padding: 10px 20px;
+            }
+            
+            h1.bangers-font {
+                font-size: 2.5rem;
+            }
+
+            #comic-word-overlay {
+                font-size: 6rem;
+            }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <!-- Comic strips at top and bottom -->
+    <div class="comic-strip"></div>
+    <div class="comic-strip bottom"></div>
+    
+    <!-- Floating comic clouds -->
+    <div class="comic-cloud cloud-1"></div>
+    <div class="comic-cloud cloud-2"></div>
+    <div class="comic-cloud cloud-3"></div>
+    
+    <!-- Background comic light -->
+    <div class="comic-light"></div>
+    
+    <div id="comic-word-overlay"></div>
+
+    <div id="game-container" class="pulse">
+        <!-- Character in the corner -->
+        <div id="character" class="character"></div>
+        
+        <!-- Start Screen -->
+        <div id="start-screen" class="text-center">
+            <h1 class="bangers-font text-5xl md:text-7xl text-white mb-4">SDA Trivia Challenge</h1>
+            <div class="comic-bubble">
+                <p class="text-lg md:text-xl text-gray-800 mb-0">Test your knowledge from The Great Controversy, Counsels on Diet and Foods, Last Day Events, Music, and the KJV Bible!</p>
+            </div>
+            
+            <div class="mode-select">
+                <button id="solo-button" class="mode-button solo">Solo Player</button>
+                <button id="teams-button" class="mode-button teams">Two Teams</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="hidden">
+            <div id="solo-player-header" class="hidden">
+                <div class="player-stats">
+                    <div class="bangers-font text-2xl">Score: <span id="player-score" class="player-score">0</span></div>
+                    <div class="bangers-font text-2xl">Streak: <span id="streak-counter" class="streak-counter">0</span></div>
+                    <div id="question-counter" class="bangers-font text-2xl">1 / 98</div>
+                </div>
+            </div>
+            
+            <div id="teams-header" class="hidden">
+                <div class="flex justify-between items-center mb-4 text-white">
+                    <div id="team-blue-score" class="bangers-font text-2xl text-blue-400">Blue: 0</div>
+                    <div id="question-counter-teams" class="bangers-font text-2xl">1 / 98</div>
+                    <div id="team-black-score" class="bangers-font text-2xl text-gray-400">Black: 0</div>
+                </div>
+            </div>
+            
+            <div class="flex justify-center mb-4">
+                 <div id="timer" class="bangers-font text-3xl text-amber-400">Time: 15</div>
+            </div>
+            <div id="progress-bar-container" class="w-full bg-gray-700 rounded-lg h-4 mb-4 border-2 border-black">
+                <div id="progress-bar" class="progress-bar-inner" style="width: 1%;"></div>
+            </div>
+            <div id="question-container" class="comic-panel">
+                <h2 id="question-text" class="text-xl md:text-2xl font-bold mb-6 text-center">Question text goes here...</h2>
+                <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Option buttons will be inserted here -->
+                </div>
+            </div>
+            <!-- NEW: Game controls wrapper -->
+            <div id="game-controls" class="flex justify-center gap-4 mt-4">
+                <button id="exit-button" class="comic-button exit">Exit Game</button>
+                <button id="next-button" class="comic-button hidden">Next Question</button>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="hidden text-center">
+            <h1 class="bangers-font text-6xl text-white mb-4">Game Over!</h1>
+            <div class="comic-panel text-xl md:text-2xl mb-6">
+                <p id="winner-announcement" class="bangers-font text-4xl mb-4"></p>
+                <div class="final-scores-container my-4">
+                    <div id="final-score-solo" class="hidden font-bold text-3xl md:text-4xl text-amber-500">Your Score: 0</div>
+                    <div id="final-solo-stats" class="hidden mt-4">
+                        <p>Correct Answers: <span id="correct-count">0</span>/98</p>
+                        <p>Longest Streak: <span id="longest-streak">0</span></p>
+                        <div class="star-rating">
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                        </div>
+                    </div>
+                    <div id="final-score-teams" class="hidden">
+                        <div class="flex justify-around my-4">
+                            <div id="final-score-blue" class="font-bold text-3xl md:text-4xl text-blue-500">Blue: 0</div>
+                            <div id="final-score-black" class="font-bold text-3xl md:text-4xl text-gray-600">Black: 0</div>
+                        </div>
+                    </div>
+                </div>
+                <p id="end-message" class="text-lg"></p>
+            </div>
+            <div class="flex flex-col md:flex-row justify-center gap-4">
+                <button id="restart-button" class="comic-button">Play Again</button>
+                <button id="download-answers-button" class="comic-button">Download Answers</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="feedback-container" class="feedback-overlay"></div>
+    <canvas id="confetti-canvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 101;"></canvas>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script>
+        // --- DOM Elements ---
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+        const soloButton = document.getElementById('solo-button');
+        const teamsButton = document.getElementById('teams-button');
+        const questionText = document.getElementById('question-text');
+        const questionContainer = document.getElementById('question-container');
+        const optionsContainer = document.getElementById('options-container');
+        const questionCounterElement = document.getElementById('question-counter');
+        const questionCounterTeamsElement = document.getElementById('question-counter-teams');
+        const nextButton = document.getElementById('next-button');
+        const exitButton = document.getElementById('exit-button'); // NEW
+        const progressBar = document.getElementById('progress-bar');
+        const timerElement = document.getElementById('timer');
+        const teamsHeader = document.getElementById('teams-header');
+        const teamBlueScoreElement = document.getElementById('team-blue-score');
+        const teamBlackScoreElement = document.getElementById('team-black-score');
+        const finalScoreBlueElement = document.getElementById('final-score-blue');
+        const finalScoreBlackElement = document.getElementById('final-score-black');
+        const soloPlayerHeader = document.getElementById('solo-player-header');
+        const playerScoreElement = document.getElementById('player-score');
+        const streakCounterElement = document.getElementById('streak-counter');
+        const finalScoreSoloElement = document.getElementById('final-score-solo');
+        const finalSoloStatsElement = document.getElementById('final-solo-stats');
+        const finalScoreTeamsElement = document.getElementById('final-score-teams');
+        const correctCountElement = document.getElementById('correct-count');
+        const longestStreakElement = document.getElementById('longest-streak');
+        const starRating = document.querySelectorAll('.star');
+        const winnerAnnouncementElement = document.getElementById('winner-announcement');
+        const endMessageElement = document.getElementById('end-message');
+        const restartButton = document.getElementById('restart-button');
+        const downloadAnswersButton = document.getElementById('download-answers-button');
+        const feedbackContainer = document.getElementById('feedback-container');
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const confettiInstance = confetti.create(confettiCanvas, {
+            resize: true,
+            useWorker: true
+        });
+        const comicWordOverlay = document.getElementById('comic-word-overlay');
+        const characterElement = document.getElementById('character');
+
+
+        // --- Sound Effects Setup (Tone.js) ---
+        const sounds = {
+            click: new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.01, release: 0.1 } }).toDestination(),
+            correct: new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.5 } }).toDestination(),
+            incorrect: new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.01, release: 0.2 } }).toDestination(),
+            timer: new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.01, decay: 0.05, sustain: 0, release: 0.1 } }).toDestination(),
+            streak: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fmsine' }, envelope: { attack: 0.05, decay: 0.2, sustain: 0.1, release: 0.3 } }).toDestination(),
+            next: new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0 } }).toDestination()
+        };
+
+        sounds.click.volume.value = -8;
+        sounds.incorrect.volume.value = -6;
+        sounds.timer.volume.value = -10;
+        sounds.next.volume.value = -18;
+        sounds.correct.volume.value = -5;
+        sounds.streak.volume.value = -3;
+
+        // --- Game State ---
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let gameMode = 'teams';
+        let teamBlueScore = 0;
+        let teamBlackScore = 0;
+        let currentTeam = 'blue';
+        let playerScore = 0;
+        let currentStreak = 0;
+        let longestStreak = 0;
+        let correctAnswers = 0;
+        let timer;
+        let timeLeft = 15;
+        const TIME_LIMIT = 15;
+        const EXPLOSIONS = ["💥", "✨", "🌟", "🔥", "⭐", "🚀", "💫"];
+
+        const correctWords = ["KA-POW!", "ZAP!", "BAM!", "CORRECT!"];
+        const incorrectWords = ["WHIFF!", "OOPS!", "ARGH!", "NAY!"];
+        
+        const characterNormalSVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><circle cx="50" cy="40" r="30" fill="%233a86ff"/><rect x="30" y="70" width="40" height="80" fill="%233a86ff"/><circle cx="35" cy="35" r="5" fill="white"/><circle cx="65" cy="35" r="5" fill="white"/><path d="M40 55 Q50 65, 60 55" stroke="white" stroke-width="3" fill="none"/></svg>`;
+        const characterHappySVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><circle cx="50" cy="40" r="30" fill="%232ecc71"/><rect x="30" y="70" width="40" height="80" fill="%232ecc71"/><path d="M35 30 L40 40 L45 30" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M55 30 L60 40 L65 30" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M35 55 Q50 70, 65 55" stroke="white" stroke-width="4" fill="none"/></svg>`;
+        const characterSadSVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><circle cx="50" cy="40" r="30" fill="%23e74c3c"/><rect x="30" y="70" width="40" height="80" fill="%23e74c3c"/><circle cx="35" cy="40" r="4" fill="white"/><circle cx="65" cy="40" r="4" fill="white"/><path d="M40 60 Q50 50, 60 60" stroke="white" stroke-width="3" fill="none"/></svg>`;
+        const characterNervousSVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><circle cx="50" cy="40" r="30" fill="%233a86ff"/><rect x="30" y="70" width="40" height="80" fill="%233a86ff"/><circle cx="35" cy="35" r="5" fill="white"/><circle cx="65" cy="35" r="5" fill="white"/><path d="M40 55 Q50 65, 60 55" stroke="white" stroke-width="3" fill="none"/><path d="M75 30 Q 80 20, 85 30 T 75 30" fill="%233498db"/></svg>`;
+
+        // --- Question Data (Full list) ---
+        const gameQuestions = [
+            // Easy Questions (15 total)
+            { question: "According to 'Counsels on Diet and Foods', what was man's original diet in Eden?", options: ["Fruits, grains, nuts, and vegetables", "Fish and bread", "Meat and dairy", "Honey and locusts"], answer: "Fruits, grains, nuts, and vegetables" },
+            { question: "In 'The Great Controversy', what event marked the beginning of the 1260 years of papal supremacy?", options: ["The fall of Rome", "The Edict of Milan", "The decree of Emperor Justinian in A.D. 538", "The Council of Nicaea"], answer: "The decree of Emperor Justinian in A.D. 538" },
+            { question: "From 'Last Day Events', what is the 'mark of the beast'?", options: ["A computer chip", "A secret society symbol", "Sunday observance enforced by law", "A tattoo on the hand"], answer: "Sunday observance enforced by law" },
+            { question: "In the KJV Bible, who was thrown into a den of lions but was protected by God?", options: ["Joseph", "Daniel", "David", "Jeremiah"], answer: "Daniel" },
+            { question: "'Counsels on Diet and Foods' states that a close sympathy exists between the physical and what other nature?", options: ["The emotional nature", "The social nature", "The moral nature", "The intellectual nature"], answer: "The moral nature" },
+            { question: "According to 'The Great Controversy', who was the 'morning star of the Reformation'?", options: ["Martin Luther", "John Calvin", "John Wycliffe", "John Huss"], answer: "John Wycliffe" },
+            { question: "In 'Last Day Events', what are the two great errors Satan will use to deceive the world?", options: ["The Trinity and the state of the dead", "The immortality of the soul and Sunday sacredness", "A secret rapture and a temporal millennium", "Speaking in tongues and false healing"], answer: "The immortality of the soul and Sunday sacredness" },
+            { question: "In the KJV Bible, what did Jesus say are the two greatest commandments?", options: ["Honor your father and mother, and do not steal", "Love God with all your heart, and love your neighbor as yourself", "Keep the Sabbath, and pay tithe", "Be baptized, and preach the gospel"], answer: "Love God with all your heart, and love your neighbor as yourself" },
+            { question: "What does 'Counsels on Diet and Foods' say about the use of tea and coffee?", options: ["They are harmless in moderation", "They are beneficial for health", "They are stimulating and contain poisons", "They should be replaced with sugary drinks"], answer: "They are stimulating and contain poisons" },
+            { question: "According to 'Music: Its Role, Qualities, and Influence', what is song a weapon against?", options: ["Temptation", "Discouragement", "Pride", "Ignorance"], answer: "Discouragement" },
+            { question: "In 'Music: Its Role, Qualities, and Influence', singing as a part of religious service is as much an act of worship as what?", options: ["Tithing", "Fasting", "Preaching", "Prayer"], answer: "Prayer" },
+            { question: "What did Jesus often do to welcome the morning light, according to 'Music: Its Role, Qualities, and Influence'?", options: ["He went for a walk", "He welcomed it with the voice of singing", "He read the Scriptures", "He gathered with his disciples"], answer: "He welcomed it with the voice of singing" },
+            { question: "According to 'Music: Its Role, Qualities, and Influence', what is one of the most effective means of impressing spiritual truth upon the heart?", options: ["Listening to sermons", "Song", "Studying history", "Debating theology"], answer: "Song" },
+            { question: "What should accompany singing in our services whenever possible, according to 'Music: Its Role, Qualities, and Influence'?", options: ["Dramatic readings", "Congregational responses", "Instrumental music", "Periods of silence"], answer: "Instrumental music" },
+            { question: "In the KJV Bible, which disciple denied Jesus three times?", options: ["Judas", "John", "Peter", "Thomas"], answer: "Peter" },
+            
+            // Difficult Questions (83 total)
+            { question: "In 'Counsels on Diet and Foods', what specific combination of common foods is mentioned as being 'liable to cause fermentation in the stomach'?", options: ["Bread and water", "Fruit and vegetables", "Milk and sugar", "Nuts and grains"], answer: "Milk and sugar" },
+            { question: "According to 'The Great Controversy', the doctrine of the world's conversion and a spiritual reign of Christ was not held by the apostolic church but became generally accepted around what century?", options: ["10th century", "14th century", "16th century", "18th century"], answer: "18th century" },
+            { question: "In 'Last Day Events', what specific reason is given for why God's people should move out of the cities, related to a future economic crisis?", options: ["High cost of living", "The problem of buying and selling", "Lack of jobs", "Overcrowding"], answer: "The problem of buying and selling" },
+            { question: "The KJV Bible book of Habakkuk contains a prayer where the prophet, contemplating God's coming judgment, says 'in wrath remember...'", options: ["...the covenant'", "...mercy'", "...Thy people'", "...the children'"], answer: "...mercy'" },
+            { question: "'The Great Controversy' identifies the 'beast with lamblike horns' (Rev. 13) as which nation?", options: ["The Papacy", "The Ottoman Empire", "The United States of America", "The French Republic"], answer: "The United States of America" },
+            { question: "In 'Counsels on Diet and Foods', what specific reason did Ellen White give for why she did not make her own diet a rigid criterion for others, mentioning two specific foods?", options: ["Beans are poison to her, but not to her family", "She dislikes apples, but others enjoy them", "Nuts cause her allergies, but not her husband", "She cannot digest cabbage, but her children can"], answer: "Beans are poison to her, but not to her family" },
+            { question: "According to 'Last Day Events', what specific group of people will be 'the very first to feel the stroke of the wrath of God'?", options: ["The inhabitants of Babylon", "The ancient men, the spiritual guardians of the people", "The kings of the earth", "The merchants of the great city"], answer: "The ancient men, the spiritual guardians of the people" },
+            { question: "In the KJV Bible, Paul's letter to Philemon is primarily about what subject?", options: ["The second coming of Christ", "The forgiveness and restoration of a runaway slave, Onesimus", "The duties of church elders", "A warning against false teachers"], answer: "The forgiveness and restoration of a runaway slave, Onesimus" },
+            { question: "In 'The Great Controversy', what event is described as the 'very first impulse of the renewed heart'?", options: ["To seek a quiet place for meditation", "To bring others also to the Saviour", "To study the prophecies diligently", "To reform one's physical habits"], answer: "To bring others also to the Saviour" },
+            { question: "In 'Last Day Events', what specific action does Satan take that 'will deceive none but those who, like Pharaoh, are seeking to resist the truth'?", options: ["Appearing as a loved one who has died", "Performing miracles of healing", "Bringing fire down from heaven", "Personating Christ in appearance, but not in the manner of His coming"], answer: "Personating Christ in appearance, but not in the manner of His coming" },
+            { question: "The KJV book of Jude contains a prophecy from which non-canonical book, quoting a patriarch who was 'the seventh from Adam'?", options: ["The Book of Jubilees", "The Book of Enoch", "The Book of Jasher", "The Assumption of Moses"], answer: "The Book of Enoch" },
+            { question: "In 'The Great Controversy', the Waldenses were accused of having an appearance of piety and sanctity that seduced 'the sheep of the true fold.' What did the papal bull order to be done to them?", options: ["To be banished to remote islands", "To have their Bibles confiscated", "To be crushed like venomous snakes", "To be sold into slavery"], answer: "To be crushed like venomous snakes" },
+            { question: "'Counsels on Diet and Foods' states that 'the less feverish the diet, the more easily can the passions be controlled.' This counsel is given in the context of warning against what specific food for children?", options: ["Sugar", "Spices", "Meat", "Fine-flour bread"], answer: "Meat" },
+            { question: "According to 'Last Day Events', what specific group will fill the 'broken ranks' of those who are shaken out of the church?", options: ["The youth who have been rightly trained", "Those who come in at the eleventh hour", "The angels from heaven", "The leaders from other denominations"], answer: "Those who come in at the eleventh hour" },
+            { question: "In the KJV Bible, what was the primary reason for the division of Israel into two kingdoms after Solomon's death?", options: ["Idolatry introduced by Solomon's foreign wives", "A dispute over the location of the capital", "Rehoboam's foolish and harsh response to the people's request for lighter taxes", "Invasion by the Assyrian empire"], answer: "Rehoboam's foolish and harsh response to the people's request for lighter taxes" },
+            { question: "'Counsels on Diet and Foods' mentions that Ellen White, in her early experience with health reform, had to fight a specific craving. What was it?", options: ["Sugar", "Cheese", "Vinegar", "Spices"], answer: "Vinegar" },
+            { question: "In 'Last Day Events', when will the 'special resurrection' occur, and who is included in it besides those who died in the faith of the third angel's message?", options: ["At the beginning of the 1000 years; only the martyrs", "At the Second Coming; those who pierced Him", "Before the seven last plagues; the 144,000", "After the millennium; all the wicked"], answer: "At the Second Coming; those who pierced Him" },
+            { question: "The KJV book of Zephaniah delivers a message of judgment and hope. What is the central theme of the 'day of the Lord' described in this book?", options: ["A day of feasting and celebration", "A day of wrath, trouble, and distress", "A day of quiet and rest", "A day of building and planting"], answer: "A day of wrath, trouble, and distress" },
+            { question: "In 'The Great Controversy', what specific reason is given for why the Waldenses sent their youth to universities in France or Italy?", options: ["To become wealthy merchants", "To gain military training", "To secretly spread the gospel and obtain a broader education", "To learn classical art and music"], answer: "To secretly spread the gospel and obtain a broader education" },
+            { question: "'Counsels on Diet and Foods' likens the health reform to a specific body part in its relation to the third angel's message. What is it?", options: ["The heart", "The head", "The right arm", "The feet"], answer: "The right arm" },
+            { question: "In 'Last Day Events', what specific group is mentioned as being 'the most efficient agents of Satan to misrepresent and accuse' God's people before the courts?", options: ["The rulers of the land", "The popular ministry", "Apostates from the faith", "The spirits of devils"], answer: "Apostates from the faith" },
+            { question: "In the KJV book of Haggai, the Lord promises that the glory of the 'latter house' would be greater than the former. How was this fulfilled?", options: ["By its greater size and more expensive materials", "By the personal presence of Jesus Christ", "By the number of worshipers it attracted", "By the miracles performed there"], answer: "By the personal presence of Jesus Christ" },
+            { question: "What specific item, according to 'Counsels on Diet and Foods', did Ellen White state she used 'for cooking purposes from dairies where the cows are in healthy condition' after she had stopped placing it on her table?", options: ["Cheese", "Yogurt", "Butter", "Lard"], answer: "Butter" },
+            { question: "In 'The Great Controversy', what specific action by the French Assembly is cited as the point where France 'publicly rejected God and set aside the Bible'?", options: ["The execution of the king", "The storming of the Bastille", "The abolition of the Christian religion and burning of Bibles", "The establishment of the ten-day week"], answer: "The abolition of the Christian religion and burning of Bibles" },
+            { question: "What is the 'mystery of iniquity' mentioned in 2 Thessalonians 2, as identified in 'The Great Controversy'?", options: ["The rise of atheism", "The development of the Papacy", "The deceptions of spiritualism", "The rebellion of the angels"], answer: "The development of the Papacy" },
+            { question: "According to 'Counsels on Diet and Foods', what specific physical effect is attributed to the use of irritating condiments like mustard and pepper?", options: ["They improve digestion", "They purify the blood", "They make the blood feverish and impure", "They strengthen the nerves"], answer: "They make the blood feverish and impure" },
+            { question: "In 'Last Day Events', what is the final, crowning act in Satan's great drama of deception?", options: ["Making fire come down from heaven", "Performing widespread miracles of healing", "Personating Christ Himself", "Appearing as an angel of light to world leaders"], answer: "Personating Christ Himself" },
+            { question: "In the KJV book of Nahum, the prophet describes the utter destruction of which powerful, wicked city?", options: ["Babylon", "Tyre", "Nineveh", "Sodom"], answer: "Nineveh" },
+            { question: "'The Great Controversy' describes the Waldenses as preserving the truth 'for a thousand years.' What was their primary source of faith and practice?", options: ["The writings of the early church fathers", "The decrees of church councils", "The Bible only", "The guidance of their pastors"], answer: "The Bible only" },
+            { question: "In 'Counsels on Diet and Foods', what specific danger is mentioned regarding the free use of milk and sugar taken together?", options: ["It causes weight gain", "It is expensive", "It is liable to cause fermentation in the stomach", "It weakens the bones"], answer: "It is liable to cause fermentation in the stomach" },
+            { question: "According to 'Last Day Events', what happens immediately after the four angels cease to hold the four winds?", options: ["The second coming of Christ", "The seven last plagues begin", "The sealing of the 144,000 is completed", "The loud cry is given"], answer: "The seven last plagues begin" },
+            { question: "In the KJV Bible, what prophet was told to marry a 'wife of whoredoms' as a symbol of Israel's unfaithfulness to God?", options: ["Isaiah", "Jeremiah", "Ezekiel", "Hosea"], answer: "Hosea" },
+            { question: "In 'The Great Controversy', what was the 'grand principle' maintained by reformers like Wycliffe, Huss, and Luther?", options: ["The supremacy of the pope", "The infallibility of church councils", "The infallible authority of the Holy Scriptures", "The importance of good works for salvation"], answer: "The infallible authority of the Holy Scriptures" },
+            { question: "According to 'Counsels on Diet and Foods', what is the relationship between diet and spirituality?", options: ["They are unrelated", "A close sympathy exists between the physical and moral nature", "Spiritual discipline can overcome any dietary error", "Only the quality, not the quantity, of food matters"], answer: "A close sympathy exists between the physical and moral nature" },
+            { question: "In 'Last Day Events', where do God's people find refuge during the time when the death decree is issued?", options: ["In foreign countries", "In the large cities", "In desolate and solitary places, including mountains", "In specially prepared underground bunkers"], answer: "In desolate and solitary places, including mountains" },
+            { question: "In the KJV book of Amos, what recurring phrase does the prophet use to introduce the specific judgments against the nations surrounding Israel and against Israel itself?", options: ["'Hear the word of the Lord'", "'Thus saith the Lord'", "'For three transgressions... and for four, I will not turn away the punishment'", "'The day of the Lord is at hand'"], answer: "'For three transgressions... and for four, I will not turn away the punishment'" },
+            { question: "'The Great Controversy' states that during the French Revolution's Reign of Terror, the Bible was replaced by the worship of what?", options: ["The Goddess of Reason", "The Sun God", "The Emperor", "The State"], answer: "The Goddess of Reason" },
+            { question: "What specific advice does 'Counsels on Diet and Foods' give regarding eating after 'violent or excessive exercise'?", options: ["Eat a large meal to replenish energy", "It is better not to eat until rest or relief is found", "Drink a stimulating beverage", "Eat a small amount of sugar"], answer: "It is better not to eat until rest or relief is found" },
+            { question: "According to 'Last Day Events', what happens to the living righteous at the second coming of Christ?", options: ["They die and are immediately resurrected", "They are changed 'in a moment, in the twinkling of an eye'", "They must endure the seven last plagues", "They are taken to heaven before the plagues"], answer: "They are changed 'in a moment, in the twinkling of an eye'" },
+            { question: "In the KJV Bible, what did the apostle Paul say was his 'thorn in the flesh'?", options: ["A physical ailment or messenger of Satan", "His past persecution of Christians", "His difficulty in speaking", "His constant travels"], answer: "A physical ailment or messenger of Satan" },
+            { question: "In 'The Great Controversy', what was the primary reason for the disappointment of the Adventists in 1844?", options: ["A mistake in the reckoning of the prophetic periods", "A misapprehension of the event to take place at the end of the 2300 days", "The failure of the signs in the sun, moon, and stars", "The opposition from popular ministers"], answer: "A misapprehension of the event to take place at the end of the 2300 days" },
+            { question: "'Counsels on Diet and Foods' teaches that to keep the body in a healthy condition should be the 'study of our life'. Why?", options: ["To achieve worldly success", "To glorify God and do the greatest amount of good", "To avoid medical expenses", "To live longer than others"], answer: "To glorify God and do the greatest amount of good" },
+            { question: "In 'Last Day Events', what is the 'shaking' among God's people caused by?", options: ["The enforcement of the Sunday law", "The seven last plagues", "The straight testimony called forth by the counsel to the Laodiceans", "The appearance of false prophets"], answer: "The straight testimony called forth by the counsel to the Laodiceans" },
+            { question: "In the KJV book of Joel, what is the ultimate promise given after the prophecy of destruction by locusts and the call to repentance?", options: ["Great material wealth", "Military victory over all enemies", "The outpouring of God's Spirit upon all flesh", "A new temple in Jerusalem"], answer: "The outpouring of God's Spirit upon all flesh" },
+            { question: "According to 'The Great Controversy', what is the 'very essence of Protestantism'?", options: ["The protest of the princes at the Diet of Spires", "The ninety-five theses of Luther", "The doctrine of predestination", "The separation of church and state"], answer: "The protest of the princes at the Diet of Spires" },
+            { question: "'Counsels on Diet and Foods' states that a certain practice is 'a most pernicious violation of the laws of health.' What is it?", options: ["Eating only two meals a day", "Eating irregularly and between meals", "Eating a vegetarian diet", "Drinking water with meals"], answer: "Eating irregularly and between meals" },
+            { question: "In 'Last Day Events', what will be the great test of loyalty in the final conflict?", options: ["The Sabbath question", "The doctrine of the Trinity", "The belief in the Spirit of Prophecy", "The practice of tithing"], answer: "The Sabbath question" },
+            { question: "In the KJV Bible, what did Elisha do to heal the bitter waters at Jericho?", options: ["Prayed over them", "Struck them with his mantle", "Cast salt into the spring", "Threw a tree into them"], answer: "Cast salt into the spring" },
+            { question: "In 'The Great Controversy', what did the papal legate demand of Luther at Augsburg, without offering any counter-argument from Scripture?", options: ["To debate him publicly", "To write a formal apology", "To 'Retract, retract!'", "To leave the city immediately"], answer: "To 'Retract, retract!'" },
+            { question: "According to 'Counsels on Diet and Foods', what is the effect of eating too much food, even of a good quality?", options: ["It provides extra energy", "It strengthens the digestive organs", "It clogs the living machine and hinders its work", "It has no negative effect"], answer: "It clogs the living machine and hinders its work" },
+            { question: "In 'Last Day Events', what happens to the wicked who are living on the earth at Christ's second coming?", options: ["They are taken to heaven for judgment", "They are consumed with the spirit of His mouth and destroyed by the brightness of His glory", "They are allowed to live through the millennium", "They are cast immediately into the lake of fire"], answer: "They are consumed with the spirit of His mouth and destroyed by the brightness of His glory" },
+            { question: "In the KJV book of Malachi, what promise does God make regarding tithes and offerings?", options: ["He will rebuke the devourer and open the windows of heaven", "He will give them earthly riches", "He will grant them wisdom", "He will forgive their sins"], answer: "He will rebuke the devourer and open the windows of heaven" },
+            { question: "In 'The Great Controversy', what was the 'crowning act in the great drama of deception' that Satan will perform?", options: ["Making fire come down from heaven", "Healing the sick", "Personating Christ", "Appearing as an angel of light"], answer: "Personating Christ" },
+            { question: "According to 'Counsels on Diet and Foods', what is the relationship between intemperance in eating and drunkenness?", options: ["They are unrelated", "Wrong habits of eating and drinking destroy health and prepare the way for drunkenness", "Drunkenness is a greater sin than intemperate eating", "Only strong drink leads to intemperance"], answer: "Wrong habits of eating and drinking destroy health and prepare the way for drunkenness" },
+            { question: "In 'Last Day Events', what is the 'loud cry'?", options: ["A call for God's people to leave the cities", "The final, powerful proclamation of the third angel's message", "A shout of victory from the saints", "The voice of God announcing the day and hour of Jesus' coming"], answer: "The final, powerful proclamation of the third angel's message" },
+            { question: "In the KJV Bible, what was the sign of the covenant God made with Noah after the flood?", options: ["The Sabbath", "Circumcision", "The rainbow", "The Passover"], answer: "The rainbow" },
+            { question: "In 'The Great Controversy', what did the English Reformer Latimer say to his fellow martyr, Ridley, at the stake?", options: ["'Be thou faithful unto death'", "'We shall this day light such a candle... as I trust shall never be put out'", "'The Lord is my shepherd'", "'Into Thy hands I commend my spirit'"], answer: "'We shall this day light such a candle... as I trust shall never be put out'" },
+            { question: "According to 'Counsels on Diet and Foods', what is one of the most 'deplorable effects of the original apostasy'?", options: ["The loss of physical strength", "The loss of man's power of self-control", "The introduction of disease", "The necessity of labor"], answer: "The loss of man's power of self-control" },
+            { question: "In 'Last Day Events', what will be the experience of God's people during the time of Jacob's trouble?", options: ["They will be protected from all suffering", "They will wrestle with God in prayer, feeling a sense of their unworthiness", "They will fight against their enemies with physical weapons", "They will be hidden in heaven"], answer: "They will wrestle with God in prayer, feeling a sense of their unworthiness" },
+            { question: "In the KJV Bible, what prophet was fed by ravens?", options: ["Elijah", "Elisha", "Isaiah", "Jeremiah"], answer: "Elijah" },
+            { question: "In 'The Great Controversy', what did the French infidel Voltaire boastfully claim?", options: ["That he would prove God did not exist", "That science would replace religion", "That one man (himself) could overthrow the Christian religion", "That the French Revolution would spread to all of Europe"], answer: "That one man (himself) could overthrow the Christian religion" },
+            { question: "According to 'Counsels on Diet and Foods', what is the purpose of the health reform message?", options: ["To make people live longer", "To save money on food", "To secure the highest possible development of mind, soul, and body", "To set God's people apart from the world"], answer: "To secure the highest possible development of mind, soul, and body" },
+            { question: "In 'Last Day Events', what will be the role of children during the loud cry?", options: ["They will be protected in the country", "They will be impelled by the Spirit to go forth and declare the message", "They will be taught in special schools", "They will be silent witnesses"], answer: "They will be impelled by the Spirit to go forth and declare the message" },
+            { question: "In the KJV book of Micah, what does the Lord require of man?", options: ["To offer burnt offerings and thousands of rams", "To do justly, and to love mercy, and to walk humbly with thy God", "To build a magnificent temple", "To keep the feast days and new moons"], answer: "To do justly, and to love mercy, and to walk humbly with thy God" },
+            { question: "In 'The Great Controversy', what did the Reformer John Knox declare to the Queen of Scotland about the authority of princes in matters of religion?", options: ["Subjects are bound to the religion of their princes", "The prince's religion should be decided by the pope", "Subjects are not bound to frame their religion according to the appetites of their princes", "The church and state should be united"], answer: "Subjects are not bound to frame their religion according to the appetites of their princes" },
+            { question: "According to 'Counsels on Diet and Foods', what is the relationship between the gratification of appetite and moral power?", options: ["They are unrelated", "Indulgence of appetite weakens moral power", "Moral power can control any appetite", "A strong appetite indicates strong moral character"], answer: "Indulgence of appetite weakens moral power" },
+            { question: "In 'Last Day Events', what happens to the earth during the 1000 years (millennium)?", options: ["It is purified by fire", "It becomes the desolate home of Satan and his angels", "The righteous live on it in peace", "The wicked are given a second chance"], answer: "It becomes the desolate home of Satan and his angels" },
+            { question: "In the KJV book of Zechariah, the prophet sees two olive trees by a golden candlestick. What do the two olive trees represent?", options: ["The Old and New Testaments", "The two witnesses", "The anointed ones that stand by the Lord of the whole earth", "The kings and priests of Israel"], answer: "The anointed ones that stand by the Lord of the whole earth" },
+            { question: "In 'The Great Controversy', what was the 'secret of the power' of the papacy?", options: ["Its military strength", "Its appeal to both those who would be saved by merits and those saved in their sins", "Its alliance with kings and emperors", "Its claim of infallibility"], answer: "Its appeal to both those who would be saved by merits and those saved in their sins" },
+            { question: "In 'Music: Its Role, Qualities, and Influence', how is good singing described?", options: ["Loud and powerful", "Like the music of the birds—subdued and melodious", "Operatic and long-drawn-out", "Fast-paced and exciting"], answer: "Like the music of the birds—subdued and melodious" },
+            { question: "Regarding the fanatical movement in Indiana, what did Ellen White state was a 'bedlam of noise' that 'shocks the senses'?", options: ["Loud preaching and shouting", "Speaking in unknown tongues", "Shouting, with drums, music, and dancing", "Arguing over doctrine"], answer: "Shouting, with drums, music, and dancing" },
+            { question: "What specific instruments were listed in the eyewitness account of the 1900 Indiana camp meeting?", options: ["Piano, organ, and harp", "Guitars, banjos, and mandolins", "Organ, bass viol, fiddles, flutes, tambourines, horns, and a big bass drum", "Only congregational singing was allowed"], answer: "Organ, bass viol, fiddles, flutes, tambourines, horns, and a big bass drum" },
+            { question: "According to 'Music: Its Role, Qualities, and Influence', what is 'more offensive in God's sight than a display of instrumental music'?", options: ["Singing off-key", "Not having any music at all", "When those taking part are not consecrated", "Using only an organ for worship"], answer: "When those taking part are not consecrated" },
+            { question: "What does Ellen White identify as 'the idol which many professed Sabbath keeping Christians worship'?", options: ["Their homes", "Their children", "Music", "Fashion"], answer: "Music" }
+        ];
+
+        // --- Functions ---
+        function shuffle(array) {
+            let currentIndex = array.length,  randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function createExplosion(x, y) {
+            const explosion = document.createElement('div');
+            explosion.className = 'comic-explosion';
+            explosion.innerHTML = EXPLOSIONS[Math.floor(Math.random() * EXPLOSIONS.length)];
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const adjustedX = Math.max(50, Math.min(x, viewportWidth - 50));
+            const adjustedY = Math.max(50, Math.min(y, viewportHeight - 50));
+            explosion.style.left = `${adjustedX}px`;
+            explosion.style.top = `${adjustedY}px`;
+            document.body.appendChild(explosion);
+            setTimeout(() => {
+                explosion.remove();
+            }, 1000);
+        }
+
+        function showComicWord(isCorrect) {
+            const word = isCorrect 
+                ? correctWords[Math.floor(Math.random() * correctWords.length)]
+                : incorrectWords[Math.floor(Math.random() * incorrectWords.length)];
+
+            comicWordOverlay.textContent = word;
+            comicWordOverlay.style.color = isCorrect ? '#ffbe0b' : '#e63946';
+            comicWordOverlay.style.textShadow = isCorrect 
+                ? '-3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000'
+                : '-3px -3px 0 #fff, 3px -3px 0 #fff, -3px 3px 0 #fff, 3px 3px 0 #fff';
+
+            comicWordOverlay.classList.add('animate');
+            comicWordOverlay.onanimationend = () => {
+                comicWordOverlay.classList.remove('animate');
+            };
+        }
+
+        async function startGame(mode) {
+            await Tone.start();
+            gameMode = mode;
+            playerScore = 0;
+            currentStreak = 0;
+            longestStreak = 0;
+            correctAnswers = 0;
+            teamBlueScore = 0;
+            teamBlackScore = 0;
+            currentQuestionIndex = 0;
+            
+            characterElement.style.backgroundImage = `url("${characterNormalSVG}")`;
+            const easyQuestions = gameQuestions.slice(0, 15);
+            const hardQuestions = gameQuestions.slice(15);
+            const shuffledEasy = shuffle(easyQuestions);
+            const shuffledHard = shuffle(hardQuestions);
+            questions = [...shuffledEasy, ...shuffledHard];
+
+            startScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            nextButton.classList.add('hidden');
+            
+            if (gameMode === 'solo') {
+                soloPlayerHeader.classList.remove('hidden');
+                teamsHeader.classList.add('hidden');
+                updateSoloStats();
+            } else {
+                soloPlayerHeader.classList.add('hidden');
+                teamsHeader.classList.remove('hidden');
+                updateScore();
+            }
+            showQuestion();
+        }
+
+        function showQuestion() {
+            resetState();
+            characterElement.style.backgroundImage = `url("${characterNormalSVG}")`;
+            
+            questionContainer.classList.add('page-flip');
+            setTimeout(() => {
+                questionContainer.classList.remove('page-flip');
+            }, 600);
+            
+            if (gameMode === 'teams') {
+                currentTeam = (currentQuestionIndex % 2 === 0) ? 'blue' : 'black';
+                questionContainer.classList.remove('blue-turn', 'black-turn', 'solo-turn');
+                questionContainer.classList.add(currentTeam === 'blue' ? 'blue-turn' : 'black-turn');
+            } else {
+                questionContainer.classList.remove('blue-turn', 'black-turn');
+                questionContainer.classList.add('solo-turn');
+            }
+
+            const question = questions[currentQuestionIndex];
+            questionText.innerText = question.question;
+            shuffle(question.options).forEach(option => {
+                const button = document.createElement('button');
+                button.innerText = option;
+                button.classList.add('option-button');
+                button.addEventListener('click', selectAnswer);
+                optionsContainer.appendChild(button);
+            });
+            updateProgress();
+            startTimer();
+        }
+
+        function startTimer() {
+            timeLeft = TIME_LIMIT;
+            timerElement.innerText = `Time: ${timeLeft}`;
+            timerElement.style.color = '#fca311';
+            timerElement.classList.remove('animate-pulse');
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                timerElement.innerText = `Time: ${timeLeft}`;
+                
+                if (timeLeft <= 5 && timeLeft > 0) {
+                    timerElement.style.color = '#e74c3c';
+                    timerElement.classList.add('animate-pulse');
+                    sounds.timer.triggerAttackRelease('C2', '8n');
+                    characterElement.style.backgroundImage = `url("${characterNervousSVG}")`;
+                }
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    handleTimeUp();
+                }
+            }, 1000);
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            // FIX: Remove pulse animation when timer resets
+            timerElement.classList.remove('animate-pulse');
+            timerElement.style.color = '#fca311';
+        }
+
+        function handleTimeUp() {
+            resetTimer(); // Use resetTimer to stop pulse
+            sounds.incorrect.triggerAttackRelease('G2', '0.5');
+            showFeedback(false);
+            showComicWord(false);
+            characterElement.style.backgroundImage = `url("${characterSadSVG}")`;
+            
+            Array.from(optionsContainer.children).forEach(button => {
+                if (button.innerText === questions[currentQuestionIndex].answer) {
+                    button.classList.add('correct');
+                }
+                button.classList.add('disabled');
+            });
+            
+            nextButton.classList.remove('hidden');
+            
+            if (gameMode === 'solo') {
+                currentStreak = 0;
+                streakCounterElement.innerText = currentStreak;
+            }
+        }
+
+        function resetState() {
+            resetTimer();
+            nextButton.classList.add('hidden');
+            while (optionsContainer.firstChild) {
+                optionsContainer.removeChild(optionsContainer.firstChild);
+            }
+        }
+
+        function selectAnswer(e) {
+            resetTimer();
+            sounds.click.triggerAttackRelease('C4', '8n');
+            const selectedButton = e.target;
+            const correct = selectedButton.innerText === questions[currentQuestionIndex].answer;
+            
+            createExplosion(e.clientX, e.clientY);
+            showComicWord(correct);
+            
+            if (correct) {
+                sounds.correct.triggerAttackRelease('C5', '0.3');
+                characterElement.style.backgroundImage = `url("${characterHappySVG}")`;
+                if (gameMode === 'solo') {
+                    playerScore += 10 + currentStreak;
+                    currentStreak++;
+                    correctAnswers++;
+                    if (currentStreak > longestStreak) {
+                        longestStreak = currentStreak;
+                    }
+                    if (currentStreak >= 3 && currentStreak % 3 === 0) {
+                        sounds.streak.triggerAttackRelease(['C4', 'E4', 'G4', 'C5'], '0.4');
+                    }
+                    updateSoloStats();
+                } else {
+                    if (currentTeam === 'blue') teamBlueScore++;
+                    else teamBlackScore++;
+                    updateScore();
+                }
+                selectedButton.classList.add('correct');
+                showFeedback(true);
+            } else {
+                sounds.incorrect.triggerAttackRelease('G2', '0.5');
+                characterElement.style.backgroundImage = `url("${characterSadSVG}")`;
+                if (gameMode === 'solo') {
+                    currentStreak = 0;
+                    streakCounterElement.innerText = currentStreak;
+                }
+                selectedButton.classList.add('incorrect');
+                showFeedback(false);
+            }
+
+            Array.from(optionsContainer.children).forEach(button => {
+                if (button.innerText === questions[currentQuestionIndex].answer) {
+                    button.classList.add('correct');
+                }
+                button.classList.add('disabled');
+            });
+
+            nextButton.classList.remove('hidden');
+        }
+
+        function showFeedback(isCorrect) {
+            feedbackContainer.innerHTML = '';
+            const icon = document.createElement('span');
+            icon.classList.add('feedback-icon');
+
+            if (isCorrect) {
+                confettiInstance({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            } else {
+                icon.innerHTML = '❌';
+                icon.style.textShadow = "0 0 20px #e74c3c";
+                feedbackContainer.appendChild(icon);
+                setTimeout(() => feedbackContainer.innerHTML = '', 1000);
+            }
+        }
+
+        function updateScore() {
+            teamBlueScoreElement.innerText = `Blue: ${teamBlueScore}`;
+            teamBlackScoreElement.innerText = `Black: ${teamBlackScore}`;
+        }
+        
+        function updateSoloStats() {
+            playerScoreElement.innerText = playerScore;
+            streakCounterElement.innerText = currentStreak;
+        }
+
+        function updateProgress() {
+            const progressText = `${currentQuestionIndex + 1} / ${questions.length}`;
+            questionCounterElement.innerText = progressText;
+            questionCounterTeamsElement.innerText = progressText;
+            const progressPercentage = ((currentQuestionIndex + 1) / questions.length) * 100;
+            progressBar.style.width = `${progressPercentage}%`;
+        }
+
+        function showEndScreen() {
+            gameScreen.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+            
+            if (gameMode === 'solo') {
+                finalScoreSoloElement.classList.remove('hidden');
+                finalSoloStatsElement.classList.remove('hidden');
+                finalScoreTeamsElement.classList.add('hidden');
+                finalScoreSoloElement.innerText = `Your Score: ${playerScore}`;
+                correctCountElement.innerText = `${correctAnswers}/${questions.length}`;
+                longestStreakElement.innerText = longestStreak;
+                const stars = Math.min(5, Math.ceil((correctAnswers / questions.length) * 5));
+                for (let i = 0; i < starRating.length; i++) {
+                    starRating[i].classList.remove('filled');
+                    if (i < stars) {
+                        starRating[i].classList.add('filled');
+                    }
+                }
+                let message = "Keep studying God's Word - you'll improve!";
+                if (correctAnswers / questions.length >= 0.9) {
+                    message = "Outstanding! You're a true SDA scholar!";
+                } else if (correctAnswers / questions.length >= 0.7) {
+                    message = "Excellent knowledge! Keep studying!";
+                } else if (correctAnswers / questions.length >= 0.5) {
+                    message = "Good effort! Review the materials to improve!";
+                }
+                winnerAnnouncementElement.innerText = "Game Complete!";
+                winnerAnnouncementElement.style.color = '#fca311';
+                endMessageElement.innerText = message;
+            } else {
+                finalScoreSoloElement.classList.add('hidden');
+                finalSoloStatsElement.classList.add('hidden');
+                finalScoreTeamsElement.classList.remove('hidden');
+                finalScoreBlueElement.innerText = `Blue: ${teamBlueScore}`;
+                finalScoreBlackElement.innerText = `Black: ${teamBlackScore}`;
+                
+                if (teamBlueScore > teamBlackScore) {
+                    winnerAnnouncementElement.innerText = "Team Blue Wins!";
+                    winnerAnnouncementElement.style.color = '#3b82f6';
+                    endMessageElement.innerText = "Congratulations, Team Blue!";
+                } else if (teamBlackScore > teamBlueScore) {
+                    winnerAnnouncementElement.innerText = "Team Black Wins!";
+                    winnerAnnouncementElement.style.color = '#1f2937';
+                    endMessageElement.innerText = "Congratulations, Team Black!";
+                } else {
+                    winnerAnnouncementElement.innerText = "It's a Tie!";
+                    winnerAnnouncementElement.style.color = '#fca311';
+                    endMessageElement.innerText = "An impressive display of knowledge from both teams!";
+                }
+            }
+        }
+
+        // NEW: Function to exit the game
+        function exitGame() {
+            sounds.click.triggerAttackRelease('C4', '8n');
+            clearInterval(timer);
+            gameScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            endScreen.classList.add('hidden');
+            characterElement.style.backgroundImage = `url("${characterNormalSVG}")`;
+            timerElement.classList.remove('animate-pulse');
+            timerElement.style.color = '#fca311';
+        }
+
+        function downloadAnswers() {
+            sounds.click.triggerAttackRelease('C4', '8n');
+            let answerText = "SDA Trivia Challenge - Answer Key\n\n";
+            gameQuestions.forEach((q, index) => {
+                answerText += `Q${index + 1}: ${q.question}\n`;
+                answerText += `Answer: ${q.answer}\n\n`;
+            });
+            const blob = new Blob([answerText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'SDA_Trivia_Answers.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // --- Event Listeners ---
+        soloButton.addEventListener('click', () => {
+            sounds.click.triggerAttackRelease('C4', '8n');
+            startGame('solo');
+        });
+        teamsButton.addEventListener('click', () => {
+            sounds.click.triggerAttackRelease('C4', '8n');
+            startGame('teams');
+        });
+        restartButton.addEventListener('click', () => {
+            sounds.click.triggerAttackRelease('C4', '8n');
+            for (let i = 0; i < starRating.length; i++) {
+                starRating[i].classList.remove('filled');
+            }
+            startGame(gameMode);
+        });
+        downloadAnswersButton.addEventListener('click', downloadAnswers);
+        exitButton.addEventListener('click', exitGame); // NEW
+
+        nextButton.addEventListener('click', () => {
+            sounds.next.triggerAttackRelease("8n");
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                showQuestion();
+            } else {
+                showEndScreen();
+            }
+        });
+
+        // Set initial character state
+        characterElement.style.backgroundImage = `url("${characterNormalSVG}")`;
+    </script>
+</body>
+</html>
